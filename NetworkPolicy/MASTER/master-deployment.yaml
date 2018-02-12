@@ -1,0 +1,30 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master
+  labels:
+    component: master
+    allow-web1: "true"
+    allow-web2: "true"
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      component: master
+      allow-web1: "true"
+      allow-web2: "true"
+  replicas: 1 
+  template: 
+    metadata:
+      labels:
+        component: master
+        allow-web1: "true"
+        allow-web2: "true"
+    spec:
+      containers:
+      - name: master-container
+        image: nordri/nordri-dev-tools
+        command: ["/bin/sleep"]
+        args: ["3600"]
