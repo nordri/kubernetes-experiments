@@ -1,0 +1,38 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: apache2
+  labels:
+    app: web2
+spec:
+  selector:
+    app: web2
+  ports:
+  - protocol: TCP
+    port: 80
+    name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apache2
+  labels:
+    app: web2
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: web2
+  replicas: 1 
+  template: 
+    metadata:
+      labels:
+        app: web2
+    spec:
+      containers:
+      - name: apache-container
+        image: httpd:2.4
+        ports:
+        - containerPort: 80

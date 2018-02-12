@@ -1,0 +1,21 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: etm-net2
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: web2
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          allow-web2: "true"
+    ports:
+    - protocol: TCP
+      port: 80
+

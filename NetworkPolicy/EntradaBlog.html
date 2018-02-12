@@ -1,0 +1,221 @@
+On this post, I will show how you can isolated services within the same namespace in Kuberntes.
+
+Why would you want to do that? Think of this as if you want to test your app behind a firewall.
+
+To achive this, Kubernetes provides Network Policy, it allows us to protect who can connect to a service. So, the first step will be deny all traffic in our namespace:
+
+<pre>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+</pre>
+
+Now, every service you deploy won't be reachable within the cluster.
+
+Let's deploy now an HTTPD Server.
+
+<pre>
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: apache1
+  labels:
+    app: web1
+spec:
+  selector:
+    app: web1
+  ports:
+  - protocol: TCP
+    port: 80
+    name: http
+---
+apiVersion: apps/v1 # for versions before 1.8.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: apache1
+  labels:
+    app: web1
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: web1
+  replicas: 1 
+  template: 
+    metadata:
+      labels:
+        app: web1
+    spec:
+      containers:
+      - name: apache-container
+        image: httpd:2.4
+        ports:
+        - containerPort: 80
+</pre>
+
+<p>And a simple container to test the connection:</p>
+
+<pre>
+---
+apiVersion: apps/v1 # for versions before 1.8.0 use apps/v1beta1
+kind: Deployment
+metadata:
+  name: ubuntu1
+  labels:
+    allow-access: "true"
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      allow-access: "true"
+  replicas: 1 
+  template: 
+    metadata:
+      labels:
+        allow-access: "true"
+    spec:
+      containers:
+      - name: nordri-container
+        image: nordri/nordri-dev-tools
+        command: ["/bin/sleep"]
+        args: ["3600"]
+</pre>
+
+<p>Here, you can see a label <em>allow-access: "true"</em> we'll use that to grant access to the service.</p>
+
+<p>And, finally, the Network Policy.</p>
+
+<pre>
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: net1
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: web1
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          allow-web1: "true"
+    ports:
+    - protocol: TCP
+      port: 80
+</pre>
+
+<p>As you can see, we can protect the Service <em>web1</em> allowing the access only from those pods with label <em>allow-access: "true"</em>.</p>
+
+<p>At this point you have something like that</p>
+
+<pre>
+NAME                         READY     STATUS              RESTARTS   AGE
+po/apache1-5565b647c-dt6kk   1/1       Running   0          38s
+po/ubuntu1-c8cffc57b-q62tw   1/1       Running   0          38s
+
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+svc/apache1      ClusterIP   10.111.18.130   <none>        80/TCP    39s
+svc/kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP   7m
+
+NAME             DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+deploy/apache1   1         1         1            0           38s
+deploy/ubuntu1   1         1         1            0           38s
+
+NAME                   POD-SELECTOR   AGE
+netpol/default-deny    <none>         59s
+netpol/deny-metadata   <none>         6m
+netpol/net1            app=web1       38s
+</pre>
+
+<p>And you can test from the container:</p>
+
+<pre>
+kubectl exec ubuntu1-c8cffc57b-q62tw -- curl apache1
+<html><body><h1>It works!</h1></body></html>
+</pre>
+
+<p>But from any other pod</p>
+
+<pre>
+kubectl run nordri-dev-tools --rm -ti --image=nordri/nordri-dev-tools /bin/bash
+If you don't see a command prompt, try pressing enter.
+root@nordri-dev-tools-766cc58546-kmhbf:/# 
+root@nordri-dev-tools-766cc58546-kmhbf:/# curl apache1
+curl: (7) Failed to connect to apache1 port 80: Connection timed out
+root@nordri-dev-tools-766cc58546-kmhbf:/# 
+</pre>
+
+<p>Cool isn't it?</p>
+
+<p>Let's do something more complex and interesting. Check out this scenario:</p>
+
+<p>What we want is:</p>
+
+<pre>
+Master  -> apache1 OK
+Master  -> apache2 OK
+Ubuntu1 -> apache1 OK
+Ubuntu2 -> apache2 OK
+Ubuntu1 -> apache2 Time out
+Ubuntu2 -> apache1 Time out
+</pre>
+
+<p>So, clone this GitHub repository</p>
+
+<pre>git clone https://github.com/nordri/kubernetes-experiments</pre>
+
+<p>And run...</p>
+
+<pre>
+./up.sh
+</pre>
+
+<p>This script will deploy all the components of our experiment. Now, there's something like this in your Kubernetes:</p>
+
+<pre>
+NAME                          READY     STATUS    RESTARTS   AGE
+po/apache1-5565b647c-fxcpc    1/1       Running   0          1m
+po/apache2-587775d7bd-pjg98   1/1       Running   0          1m
+po/master-6df9c89f5b-pqtl2    1/1       Running   0          1m
+po/ubuntu1-588f5bdbfc-qkh8t   1/1       Running   0          1m
+po/ubuntu2-f689cc5d-ncbzh     1/1       Running   0          1m
+
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+svc/apache1      ClusterIP   10.110.39.59    <none>        80/TCP    1m
+svc/apache2      ClusterIP   10.109.61.240   <none>        80/TCP    1m
+svc/kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP   23m
+
+NAME             DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+deploy/apache1   1         1         1            1           1m
+deploy/apache2   1         1         1            1           1m
+deploy/master    1         1         1            1           1m
+deploy/ubuntu1   1         1         1            1           1m
+deploy/ubuntu2   1         1         1            1           1m
+
+NAME                   POD-SELECTOR   AGE
+netpol/default-deny    <none>         1m
+netpol/deny-metadata   <none>         22m
+netpol/etm-net2        app=web2       1m
+netpol/net1            app=web1       1m
+</pre>
+
+<p>And we can check that apache1 and apache2 only can be reached from master and the container sharing the Network policy.</p>
+
+<p>To clean the house just run:</p>
+
+<pre>
+./down.sh
+</pre>

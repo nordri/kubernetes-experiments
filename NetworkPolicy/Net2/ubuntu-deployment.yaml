@@ -1,0 +1,24 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubuntu2
+  labels:
+    allow-web2: "true"
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      allow-web2: "true"
+  replicas: 1 
+  template: 
+    metadata:
+      labels:
+        allow-web2: "true"
+    spec:
+      containers:
+      - name: nordri-container
+        image: nordri/nordri-dev-tools
+        command: ["/bin/sleep"]
+        args: ["3600"]
