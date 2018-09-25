@@ -47,7 +47,7 @@ podTemplate(label: worker, containers: [
       stage('Testing') {
         container('java') {
           sh """
-            cp /home/jenkins/workspace/pipeline2/spring-boot-mysql-example/target/*.jar ./app.jar
+            cp ${WORKSPACE}/spring-boot-mysql-example/target/*.jar ./app.jar
             java -jar -Dspring.datasource.url=jdbc:mysql://127.0.0.1:3306/springboot_mysql_example ./app.jar &
             """
           RES = sh (
