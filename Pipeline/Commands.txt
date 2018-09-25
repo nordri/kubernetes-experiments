@@ -1,0 +1,37 @@
+$ minikube start --memory 4000 --cpus 2
+
+Starting local Kubernetes v1.10.0 cluster...
+Starting VM...
+Getting VM IP address...
+Moving files into cluster...
+Setting up certs...
+Connecting to cluster...
+Setting up kubeconfig...
+Starting cluster components...
+Kubectl is now configured to use the cluster.
+Loading cached images from config file.
+
+$ kubectl create -f ServiceAccount.yaml
+serviceaccount "tiller" created
+clusterrolebinding "tiller" created
+$ helm init --service-account tiller
+
+$ helm install --name jenkins -f jenkins-helm-values.yaml stable/jenkins
+
+$ minikube service jenkins
+
+- Adjusting Docker Hub credentials
+
+username: nordri
+pass: ****
+ID: DockerHub
+Description: Docker Hub Credentials.
+
+- New Pipeline
+
+Name: CI Example
+Definition: Pipeline Script from SCM
+SCM: Git
+
+Repository URL: https://github.com/nordri/Kubernetes-experiments
+Script Path: Pipeline/Jenkinsfile
