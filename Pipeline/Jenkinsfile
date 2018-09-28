@@ -21,19 +21,13 @@ podTemplate(label: worker, containers: [
         sh 'git clone https://github.com/codeurjc/spring-boot-mysql-example'
       }
       
-      stage('Installing...') {
-        container('build-tools') {
-          sh 'cd spring-boot-mysql-example && mvn -DskipTests=true install'
-        }
-      }
-
       stage('Building...') {
         container('build-tools') {
-          sh 'cd spring-boot-mysql-example && mvn -DskipTests=true clean package'
+          sh 'cd spring-boot-mysql-example && mvn -DskipTests=true clean compile package'
         }
       }
 
-      stage('Testing') {
+      stage('Testing...') {
         container('java') {
           sh """
             cp ${WORKSPACE}/spring-boot-mysql-example/target/*.jar ./app.jar
@@ -50,7 +44,7 @@ podTemplate(label: worker, containers: [
       }
 
       def gitCommit = sh(returnStdout: true, script: "cd spring-boot-mysql-example && git log -n 1 --pretty=format:'%h'").trim()
-      stage('Building & Uploading Docker images') {
+      stage('Building & Uploading Docker images...') {
         container('docker') {
           withCredentials([[$class: 'UsernamePasswordMultiBinding',
             credentialsId: 'DockerHub',
