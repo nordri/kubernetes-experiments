@@ -6,3 +6,9 @@ Some k8s experiment
 Services isolation in Kubernetes:
 
 [Blog](https://www.muspells.net/blog/2018/02/kubernetes-network-policy/)
+
+## Pipeline
+
+CI in kubernetes
+
+[Blog](https://www.muspells.net/blog/2018/09/kubernetes-pipeline/)
