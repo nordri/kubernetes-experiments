@@ -33,17 +33,6 @@ podTemplate(label: worker, containers: [
         }
       }
 
-      def gitCommit = sh(returnStdout: true, script: "cd spring-boot-mysql-example && git log -n 1 --pretty=format:'%h'").trim()
-      
-      stage('Create Docker images') {
-        container('docker') {
-          sh """
-            cd spring-boot-mysql-example 
-            docker build -t nordri/spring-boot-example:${gitCommit} .
-          """
-        }
-      }
-      
       stage('Testing') {
         container('java') {
           sh """
@@ -60,7 +49,8 @@ podTemplate(label: worker, containers: [
         }
       }
 
-      stage('Uploading Docker images') {
+      def gitCommit = sh(returnStdout: true, script: "cd spring-boot-mysql-example && git log -n 1 --pretty=format:'%h'").trim()
+      stage('Building & Uploading Docker images') {
         container('docker') {
           withCredentials([[$class: 'UsernamePasswordMultiBinding',
             credentialsId: 'DockerHub',
@@ -68,6 +58,7 @@ podTemplate(label: worker, containers: [
             passwordVariable: 'DOCKER_HUB_PASSWORD']]) {
             sh """
               cd spring-boot-mysql-example 
+              docker build -t nordri/spring-boot-example:${gitCommit} . 
               docker login -u ${DOCKER_HUB_USER} -p ${DOCKER_HUB_PASSWORD}
               docker push nordri/spring-boot-example:${gitCommit} 
               """
