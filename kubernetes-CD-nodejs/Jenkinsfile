@@ -7,7 +7,7 @@ stage('Preparation') {
   sh 'chmod +x ./kubectl && mv kubectl /usr/local/sbin'
 
 //Clone git repository
-  git url:'https://bitbucket.org/advatys/jenkins-pipeline.git'
+  git url:'https://github.com/nordri/kubernetes-experiments.git'
    }
 
 stage('Integration') {
