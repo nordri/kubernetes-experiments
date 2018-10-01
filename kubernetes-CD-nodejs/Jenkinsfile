@@ -12,9 +12,9 @@ stage('Preparation') {
 
 stage('Integration') {
  
-      withKubeConfig([credentialsId: 'jenkins-deployer-credentials', serverUrl: 'https://104.155.31.202']) {
+      withKubeConfig([credentialsId: 'jenkins-deployer-credentials', serverUrl: 'https://104.155.98.200']) {
       
-         sh 'kubectl create cm nodejs-app --from-file=src/ --namespace=myapp-integration -o=yaml --dry-run > deploy/cm.yaml'
+         sh 'kubectl create cm nodejs-app --from-file=kubernetes-CD-nodejs/src/ --namespace=myapp-integration -o=yaml --dry-run > kubernetes-CD-nodejs/deploy/cm.yaml'
          sh 'kubectl apply -f deploy/ --namespace=myapp-integration'
          try{
           //Gathering Node.js app's external IP address
@@ -36,7 +36,7 @@ stage('Integration') {
         }
     else{
                 //Executing tests 
-     sh "chmod +x tests/integration-tests.sh && ./tests/integration-tests.sh ${ip}"
+     sh "chmod +x kubernetes-CD-nodejs/tests/integration-tests.sh && ./kubernetes-CD-nodejs/tests/integration-tests.sh ${ip}"
   
      //Cleaning the integration environment
      println("Cleaning integration environment...")
@@ -55,9 +55,9 @@ stage('Integration') {
 }
    }
  stage('Production') {
-      withKubeConfig([credentialsId: 'jenkins-deployer-credentials', serverUrl: 'https://104.155.31.202']) {
+      withKubeConfig([credentialsId: 'jenkins-deployer-credentials', serverUrl: 'https://104.155.98.200']) {
       
-       sh 'kubectl create cm nodejs-app --from-file=src/ --namespace=myapp-production -o=yaml --dry-run > deploy/cm.yaml'
+       sh 'kubectl create cm nodejs-app --from-file=kubernetes-CD-nodejs/src/ --namespace=myapp-production -o=yaml --dry-run > kubernetes-CD-nodejs/deploy/cm.yaml'
 
 sh 'kubectl apply -f deploy/ --namespace=myapp-production'
       
@@ -82,7 +82,7 @@ sh 'kubectl apply -f deploy/ --namespace=myapp-production'
    }
    else{
                //Executing tests 
-    sh "chmod +x tests/production-tests.sh && ./tests/production-tests.sh ${ip}"     
+    sh "chmod +x kubernetes-CD-nodejs/tests/production-tests.sh && ./kubernetes-CD-nodejs/tests/production-tests.sh ${ip}"     
           }                                    
       }
    }
