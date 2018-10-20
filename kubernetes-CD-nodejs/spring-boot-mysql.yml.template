@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: prod
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  namespace: prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: prod
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: r00t
+        - name: MYSQL_DATABASE
+          value: springboot_mysql_example
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-boot-mysql
+  namespace: prod
+  labels:
+    app: spring-boot-mysql
+spec:
+  selector:
+    matchLabels:
+      app: spring-boot-mysql
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      name: spring-boot-mysql
+      labels:
+        app: spring-boot-mysql
+    spec:
+      containers:
+      - name: webapp
+        imagePullPolicy: Always
+        image: nordri/spring-boot-example:VERSION
+        env:
+          - name: DATABASE
+            value: db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-boot-mysql 
+  namespace: prod
+  labels:
+    app: spring-boot-mysql
+spec:
+  ports:
+    - port: 8080
+      protocol: TCP
+      name: spring-boot-mysql
+  selector:
+    app: spring-boot-mysql
+  type: NodePort
