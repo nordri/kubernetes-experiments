@@ -12,3 +12,7 @@ Services isolation in Kubernetes:
 CI in kubernetes
 
 [Blog](https://www.muspells.net/blog/2018/09/kubernetes-pipeline/)
+
+NGiNX with a Load Balancer
+
+This manifest deploy Nginx behind a LoadBalance Service
