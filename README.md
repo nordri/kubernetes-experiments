@@ -13,6 +13,8 @@ CI in kubernetes
 
 [Blog](https://www.muspells.net/blog/2018/09/kubernetes-pipeline/)
 
+## nginx
+
 NGiNX with a Load Balancer
 
 This manifest deploy Nginx behind a LoadBalance Service
